@@ -1,0 +1,3 @@
+#define FPS_MAX 50
+#define SCALE 2
+#define ROTATION_SPEED_FACTOR 1
