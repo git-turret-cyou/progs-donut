@@ -28,6 +28,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xos.h>
+#include <X11/extensions/Xdbe.h>
 
 char *argv0;
 #include "arg.h"
@@ -121,6 +122,12 @@ int main(int argc, char **argv) {
     XClearWindow(dis, win);
     XMapRaised(dis, win);
 
+    XdbeSwapInfo swap_info = {
+        win,
+        XdbeUndefined
+    };
+    XdbeBackBuffer back_buffer = XdbeAllocateBackBufferName(dis, win, swap_info.swap_action);
+
     // torus rotation floats
     float A = 0; // x-axis
     float B = 0; // z-axis
@@ -149,12 +156,15 @@ int main(int argc, char **argv) {
             for(int y = 0; height >= y; y++){
                 int color = (b[x + width * y] - 1 + M_SQRT2) / sqrt(8) * 255;
                 XSetForeground(dis, gc, color << 16 | color << 8 | color);
-                XFillRectangle(dis, win, gc, x * SCALE, y * SCALE, SCALE, SCALE);
+                XFillRectangle(dis, back_buffer, gc, x * SCALE, y * SCALE, SCALE, SCALE);
             }
         }
 
+        XdbeSwapBuffers(dis, &swap_info, 1);
+
         free(b);
 
+        XSync(dis, 1);
         double etime = utime();
 
         if(etime < stime + 1000/FPS_MAX)
