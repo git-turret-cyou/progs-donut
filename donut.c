@@ -23,12 +23,14 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#define __USE_MISC
 #include <math.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xos.h>
+
+char *argv0;
+#include "arg.h"
 
 #define BETWEEN(x, min, max) min < x && x< max
 
@@ -80,7 +82,32 @@ void drawTorus (float *b, const float *Az, const float *Bz) {
     free(z);
 }
 
-int main() {
+void usage() {
+    fprintf(stderr, "usage: %s [-h] [-s scale] [-r speed]\n", argv0);
+    exit(1);
+}
+
+int main(int argc, char **argv) {
+    /*#define SCALE 2
+    #define ROTATION_SPEED_FACTOR 1*/
+
+    int SCALE = 2;
+    int ROTATION_SPEED_FACTOR = 1;
+
+    ARGBEGIN {
+        case 's':
+            SCALE = atoi(EARGF(usage()));
+            break;
+        case 'r':
+            ROTATION_SPEED_FACTOR = atoi(EARGF(usage()));
+            break;
+        case 'h':
+            usage();
+            break;
+        default:
+            break;
+    } ARGEND
+
     Display *dis = XOpenDisplay((char*)0);
     int screen = DefaultScreen(dis);
     unsigned long black = BlackPixel(dis, screen), white = WhitePixel(dis, screen);
@@ -137,8 +164,7 @@ int main() {
         A += (rtime-stime) * (0.04f * ROTATION_SPEED_FACTOR) / (1000/FPS_MAX);// / (1000/FPS_MAX), 0.04f * ROTATION_SPEED_FACTOR);
         B += (rtime-stime) * (0.02f * ROTATION_SPEED_FACTOR) / (1000/FPS_MAX);// / (1000/FPS_MAX), 0.04f * ROTATION_SPEED_FACTOR);
 
-        printf("%.1f %d  ", (rtime-stime), 1000/(FPS_MAX));
-        printf("fps: %.1f %d     \r", 1000/(rtime-stime), FPS_MAX);
+        printf("fps: %.1f     \r", 1000/(rtime-stime));
     }
 }
 
