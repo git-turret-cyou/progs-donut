@@ -1,6 +1,5 @@
 /*
     the REAL donut.c
-    compile with -lm, -lX11
     Copyright (c) 2023 turret. <turret@turret.cyou>
 
     This program is free software: you can redistribute it and/or modify
