@@ -33,6 +33,7 @@ char *argv0;
 #include "arg.h"
 
 #define BETWEEN(x, min, max) min < x && x< max
+#define XGRAYSCALE(color) color << 16 | color << 8 | color
 
 const float theta_spacing = 0.07;
 const float phi_spacing = 0.02;
@@ -50,8 +51,8 @@ void drawTorus (float *b, const float *Az, const float *Bz) {
     float A = *Az;
     float B = *Bz;
 
-    float *z = malloc(width * height * sizeof(float));//[width * height];
-    memset(z, 0, width * height * sizeof(float) / sizeof(char)); // clear z-buffer
+    float *z = calloc(width * height, sizeof(float));//[width * height];
+    //memset(z, 0, width * height * sizeof(float) / sizeof(char)); // clear z-buffer
 
     // render torus
     float sinA = sin(A);
@@ -74,7 +75,7 @@ void drawTorus (float *b, const float *Az, const float *Bz) {
             float lum = ((sinTheta * sinA - sinPhi * cosTheta * cosA) * cosB - sinPhi * cosTheta * sinA - sinTheta * cosA - cosPhi * cosTheta * sinB);
             if (BETWEEN(y, 0, height - 2) && BETWEEN(x, 0, width) && depth > z[index]) { //22 > y && y > 0 && x > 0 && 80 > x && D > z[o]) {
                 z[index] = depth;
-                b[index] = lum + 1;
+                b[index] = lum;
             }
         }
     }
@@ -123,7 +124,7 @@ int main(int argc, char **argv) {
 
     XdbeSwapInfo swap_info = {
         win,
-        XdbeUndefined
+        XdbeBackground
     };
     XdbeBackBuffer back_buffer = XdbeAllocateBackBufferName(dis, win, swap_info.swap_action);
 
@@ -133,15 +134,13 @@ int main(int argc, char **argv) {
     while(1){
         double stime = utime();
 
-        XSync(dis, 1);
-
         XWindowAttributes attr;
         XGetWindowAttributes(dis, win, &attr);
         width = attr.width / SCALE;
         height = attr.height / SCALE;
 
-        float *b = malloc(width * height * sizeof(float));
-        memset(b, 0, width * height * sizeof(float) / sizeof(char));
+        float *b = calloc(width * height, sizeof(float));
+        //memset(b, 0, width * height * sizeof(float) / sizeof(char));
         drawTorus(b, &A, &B);
 
         // old ascii console generation code. kept for presevation sakes
@@ -151,11 +150,16 @@ int main(int argc, char **argv) {
         //    putchar(k % width ? (b[k] > 0 ? LUMINANCE_SET[(int)MAX((b[k] - 1) * 8, 0)] : ' ') : 10);
         //}
 
+        XSetForeground(dis, gc, XGRAYSCALE(37));
+        XFillRectangle(dis, back_buffer, gc, 0, 0, attr.width, attr.height);
         for(int x = 0; width >= x; x++){
             for(int y = 0; height >= y; y++){
-                int color = (b[x + width * y] - 1 + M_SQRT2) / sqrt(8) * 255;
-                XSetForeground(dis, gc, color << 16 | color << 8 | color);
-                XFillRectangle(dis, back_buffer, gc, x * SCALE, y * SCALE, SCALE, SCALE);
+                float rawcolor = b[x + width * y];
+                if(rawcolor != 0){
+                    int color = (rawcolor + M_SQRT2) / sqrt(8) * 255;
+                    XSetForeground(dis, gc, XGRAYSCALE(color));
+                    XFillRectangle(dis, back_buffer, gc, x * SCALE, y * SCALE, SCALE, SCALE);
+                }
             }
         }
 
